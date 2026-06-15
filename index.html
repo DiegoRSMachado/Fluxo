@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16233A">
+<title>Fluxo — meu lucro real</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --ink:#16233A; --ink-soft:#5A6B82; --ink-faint:#8E9BAD;
+    --surface:#F4F2EC; --card:#FFFFFF; --line:#E4E0D6;
+    --in:#0E8A5F; --in-bg:#E4F2EB;
+    --out:#C9531F; --out-bg:#F8E9E0;
+    --gold:#C98A12; --gold-deep:#8A5E07; --gold-bg:#F6EDD6;
+    --shadow:0 1px 2px rgba(22,35,58,.05), 0 8px 24px rgba(22,35,58,.06);
+    --r:14px;
+    --safe-b:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{background:var(--surface);color:var(--ink)}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+    font-size:16px;line-height:1.45;
+    padding-bottom:calc(78px + var(--safe-b));
+    min-height:100dvh;
+  }
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;letter-spacing:-.01em}
+  /* ---------- header ---------- */
+  header{
+    padding:18px 18px 10px;display:flex;justify-content:space-between;align-items:flex-end;
+  }
+  header .eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);font-weight:700}
+  header h1{font-size:20px;font-weight:800;letter-spacing:-.02em;margin-top:2px}
+  header .date{text-align:right;font-size:12px;color:var(--ink-soft);font-weight:600}
+  /* ---------- views ---------- */
+  main{padding:0 18px}
+  .view{display:none;animation:fade .25s ease}
+  .view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  /* ---------- hero (lucro real) ---------- */
+  .hero{
+    background:var(--ink);color:#fff;border-radius:18px;padding:20px 20px 18px;
+    box-shadow:var(--shadow);position:relative;overflow:hidden;
+  }
+  .hero .lbl{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#9FB0C7;font-weight:700}
+  .hero .big{font-size:46px;font-weight:800;line-height:1.05;margin:4px 0 2px;letter-spacing:-.03em}
+  .hero .big small{font-size:22px;font-weight:700;opacity:.7;margin-right:2px}
+  .hero .meta{font-size:13px;color:#AEBCD0;font-weight:600}
+  .hero.neg .big{color:#FF9D7A}
+  /* waterfall bruto -> liquido */
+  .flow{display:flex;gap:10px;margin-top:16px;border-top:1px solid rgba(255,255,255,.12);padding-top:14px}
+  .flow div{flex:1}
+  .flow .k{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8FA0B8;font-weight:700}
+  .flow .v{font-size:16px;font-weight:700;margin-top:2px}
+  .flow .v.in{color:#7FE3BB} .flow .v.out{color:#FFB494}
+  /* alerta de custo */
+  .costbar{margin-top:14px}
+  .costbar .track{height:6px;background:rgba(255,255,255,.14);border-radius:99px;overflow:hidden}
+  .costbar .fill{height:100%;background:linear-gradient(90deg,#E7A33A,#C9531F);border-radius:99px;transition:width .4s ease}
+  .costbar .cap{font-size:11.5px;color:#AEBCD0;font-weight:600;margin-top:6px}
+  /* meta do dia */
+  .goal{margin-top:14px;display:flex;align-items:center;gap:10px}
+  .goal .track{flex:1;height:8px;background:#E4E0D6;border-radius:99px;overflow:hidden}
+  .goal .fill{height:100%;background:var(--gold);border-radius:99px;transition:width .4s ease}
+  .goal .cap{font-size:12px;font-weight:700;color:var(--ink-soft);white-space:nowrap}
+  /* ---------- quick add ---------- */
+  .add{display:flex;gap:12px;margin-top:16px}
+  .add button{
+    flex:1;border:none;border-radius:var(--r);padding:16px 12px;font-size:16px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;letter-spacing:-.01em;
+    box-shadow:var(--shadow);transition:transform .08s ease;
+  }
+  .add button:active{transform:scale(.97)}
+  .add .pin{background:var(--in-bg);color:var(--in)}
+  .add .pout{background:var(--out-bg);color:var(--out)}
+  .add .ic{font-size:20px;line-height:1}
+  /* ---------- section / list ---------- */
+  .sec-h{display:flex;justify-content:space-between;align-items:baseline;margin:24px 2px 10px}
+  .sec-h h2{font-size:15px;font-weight:800;letter-spacing:-.01em}
+  .sec-h .side{font-size:12px;color:var(--ink-soft);font-weight:700}
+  .list{display:flex;flex-direction:column;gap:8px}
+  .row{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+    padding:13px 14px;display:flex;align-items:center;gap:12px;
+  }
+  .row .tag{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;font-size:18px;flex-shrink:0}
+  .row.in-row .tag{background:var(--in-bg)} .row.out-row .tag{background:var(--out-bg)}
+  .row .body{flex:1;min-width:0}
+  .row .t1{font-weight:700;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .t2{font-size:12px;color:var(--ink-soft);font-weight:600;margin-top:1px}
+  .row .amt{font-weight:800;font-size:15px;white-space:nowrap}
+  .row .amt.in{color:var(--in)} .row .amt.out{color:var(--out)}
+  .row .del{background:none;border:none;color:var(--ink-faint);font-size:20px;padding:4px 2px 4px 8px;cursor:pointer}
+  .empty{text-align:center;color:var(--ink-faint);font-size:13.5px;font-weight:600;padding:26px 12px;
+    border:1px dashed var(--line);border-radius:var(--r)}
+  /* ---------- stat cards (mês) ---------- */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 15px}
+  .stat .k{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);font-weight:700}
+  .stat .v{font-size:22px;font-weight:800;margin-top:4px;letter-spacing:-.02em}
+  .stat .v.in{color:var(--in)} .stat .v.out{color:var(--out)} .stat .v.gold{color:var(--gold-deep)}
+  .stat.wide{grid-column:1/-1}
+  .stat .sub{font-size:12px;color:var(--ink-soft);font-weight:600;margin-top:2px}
+  /* breakdown bars */
+  .bd{display:flex;flex-direction:column;gap:9px;margin-top:4px}
+  .bd .item{font-size:13px;font-weight:700}
+  .bd .item .top{display:flex;justify-content:space-between;margin-bottom:4px}
+  .bd .item .top span:last-child{color:var(--ink-soft)}
+  .bd .item .track{height:7px;background:#EEEAE0;border-radius:99px;overflow:hidden}
+  .bd .item .fill{height:100%;border-radius:99px}
+  /* ---------- fixos ---------- */
+  .fx-add{display:flex;gap:8px;margin-bottom:14px}
+  .fx-add input{flex:1;min-width:0}
+  /* ---------- forms / inputs ---------- */
+  input,select{
+    font:inherit;width:100%;background:var(--card);border:1px solid var(--line);
+    border-radius:11px;padding:13px 14px;color:var(--ink);
+  }
+  input:focus,select:focus{outline:2px solid var(--gold);outline-offset:1px;border-color:var(--gold)}
+  label{font-size:12px;font-weight:700;color:var(--ink-soft);display:block;margin:0 0 6px 2px}
+  .field{margin-bottom:14px}
+  .btn{
+    width:100%;border:none;border-radius:12px;padding:15px;font:inherit;font-weight:800;font-size:16px;
+    cursor:pointer;letter-spacing:-.01em
+  }
+  .btn-pri{background:var(--ink);color:#fff}
+  .btn-in{background:var(--in);color:#fff}
+  .btn-out{background:var(--out);color:#fff}
+  .btn-ghost{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+  .btn:active{transform:scale(.98)}
+  /* chips */
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .chip{
+    border:1px solid var(--line);background:var(--card);border-radius:99px;padding:9px 14px;
+    font-size:13.5px;font-weight:700;cursor:pointer;color:var(--ink-soft)
+  }
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  /* ---------- bottom nav ---------- */
+  nav{
+    position:fixed;left:0;right:0;bottom:0;z-index:40;
+    background:rgba(252,251,248,.92);backdrop-filter:saturate(1.4) blur(12px);
+    border-top:1px solid var(--line);
+    display:flex;padding:8px 6px calc(8px + var(--safe-b));
+  }
+  nav button{
+    flex:1;background:none;border:none;cursor:pointer;color:var(--ink-faint);
+    display:flex;flex-direction:column;align-items:center;gap:3px;font-weight:700;font-size:10.5px;
+    padding:6px 0;letter-spacing:.02em
+  }
+  nav button .ni{font-size:21px;line-height:1}
+  nav button.on{color:var(--ink)}
+  /* ---------- modal sheet ---------- */
+  .scrim{position:fixed;inset:0;background:rgba(22,35,58,.45);z-index:50;opacity:0;pointer-events:none;transition:opacity .2s}
+  .scrim.show{opacity:1;pointer-events:auto}
+  .sheet{
+    position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--surface);
+    border-radius:22px 22px 0 0;padding:8px 18px calc(22px + var(--safe-b));
+    transform:translateY(100%);transition:transform .26s cubic-bezier(.32,.72,0,1);
+    max-height:92dvh;overflow-y:auto;
+  }
+  .sheet.show{transform:none}
+  .grab{width:40px;height:4px;background:var(--line);border-radius:99px;margin:8px auto 16px}
+  .sheet h3{font-size:18px;font-weight:800;margin-bottom:16px;letter-spacing:-.02em}
+  .amt-in{font-size:34px!important;font-weight:800;text-align:center;padding:8px 0!important;border:none!important;
+    background:transparent!important;letter-spacing:-.02em}
+  .amt-in:focus{outline:none!important}
+  .amt-wrap{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px 0;margin-bottom:16px;
+    display:flex;align-items:center;justify-content:center;gap:4px}
+  .amt-wrap .cur{font-size:24px;font-weight:800;color:var(--ink-faint)}
+  /* toast */
+  .toast{position:fixed;left:50%;bottom:calc(92px + var(--safe-b));transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:#fff;padding:11px 18px;border-radius:99px;font-size:13.5px;font-weight:700;
+    z-index:80;opacity:0;transition:.25s;pointer-events:none;box-shadow:var(--shadow)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .muted{color:var(--ink-soft);font-size:13px;font-weight:600;line-height:1.5}
+  .stack>*+*{margin-top:10px}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="eyebrow">Fluxo</div>
+    <h1 id="h-title">Hoje</h1>
+  </div>
+  <div class="date" id="h-date"></div>
+</header>
+
+<main>
+  <!-- ================= HOJE ================= -->
+  <section class="view active" id="v-hoje">
+    <div class="hero" id="hero">
+      <div class="lbl">Líquido real de hoje</div>
+      <div class="big num"><small>R$</small><span id="hero-liq">0,00</span></div>
+      <div class="meta" id="hero-meta">Sem lançamentos ainda</div>
+
+      <div class="flow">
+        <div><div class="k">Bruto</div><div class="v in num" id="f-bruto">R$0</div></div>
+        <div><div class="k">Custo dia</div><div class="v out num" id="f-var">R$0</div></div>
+        <div><div class="k">Fixo/dia</div><div class="v out num" id="f-fix">R$0</div></div>
+      </div>
+
+      <div class="costbar">
+        <div class="track"><div class="fill" id="cost-fill" style="width:0%"></div></div>
+        <div class="cap" id="cost-cap">Custo sobre o bruto: —</div>
+      </div>
+    </div>
+
+    <div class="goal">
+      <div class="track"><div class="fill" id="goal-fill" style="width:0%"></div></div>
+      <div class="cap" id="goal-cap">Meta R$0</div>
+    </div>
+
+    <div class="add">
+      <button class="pin" onclick="openSheet('renda')"><span class="ic">＋</span> Renda</button>
+      <button class="pout" onclick="openSheet('despesa')"><span class="ic">－</span> Despesa</button>
+    </div>
+
+    <div class="sec-h"><h2>Lançamentos de hoje</h2><span class="side" id="hoje-count"></span></div>
+    <div class="list" id="hoje-list"></div>
+  </section>
+
+  <!-- ================= MÊS ================= -->
+  <section class="view" id="v-mes">
+    <div class="grid2">
+      <div class="stat"><div class="k">Bruto no mês</div><div class="v in num" id="m-bruto">R$0</div></div>
+      <div class="stat"><div class="k">Líquido real</div><div class="v gold num" id="m-liq">R$0</div></div>
+    </div>
+    <div class="grid2" style="margin-top:12px">
+      <div class="stat"><div class="k">Dias rodados</div><div class="v num" id="m-dias">0</div><div class="sub" id="m-mediadia">—</div></div>
+      <div class="stat"><div class="k">Custo / km</div><div class="v num" id="m-ckm">—</div><div class="sub" id="m-km">0 km</div></div>
+    </div>
+
+    <div class="sec-h"><h2>Para onde vai o dinheiro</h2></div>
+    <div class="stat wide">
+      <div class="bd" id="m-breakdown"></div>
+    </div>
+
+    <div class="sec-h"><h2>Renda por fonte</h2></div>
+    <div class="stat wide">
+      <div class="bd" id="m-fontes"></div>
+    </div>
+  </section>
+
+  <!-- ================= FIXOS ================= -->
+  <section class="view" id="v-fixos">
+    <p class="muted" style="margin:6px 2px 16px">
+      Custos fixos mensais (seguro, IPVA, celular, internet, prestação…). O app divide pelos
+      dias que tu roda e abate de cada dia — é a conta que some quando tu só olha o bruto.
+    </p>
+    <div class="fx-add">
+      <input id="fx-nome" placeholder="Nome (ex: Seguro)" autocomplete="off">
+      <input id="fx-valor" placeholder="R$/mês" inputmode="decimal" style="max-width:110px">
+      <button class="btn btn-pri" style="width:auto;padding:13px 18px" onclick="addFixo()">＋</button>
+    </div>
+    <div class="list" id="fx-list"></div>
+
+    <div class="sec-h"><h2>Configuração</h2></div>
+    <div class="stack">
+      <div class="field" style="margin:0">
+        <label>Dias que tu roda por mês</label>
+        <input id="cfg-dias" inputmode="numeric" onchange="saveCfg()">
+      </div>
+      <div class="field" style="margin:0">
+        <label>Meta de líquido por dia (R$)</label>
+        <input id="cfg-meta" inputmode="decimal" onchange="saveCfg()">
+      </div>
+      <div class="field" style="margin:0">
+        <label>Custo de manutenção por km (R$) — desgaste, óleo, pneu</label>
+        <input id="cfg-ckm" inputmode="decimal" onchange="saveCfg()">
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= BACKUP ================= -->
+  <section class="view" id="v-backup">
+    <p class="muted" style="margin:6px 2px 16px">
+      Teus dados ficam só neste aparelho. Se limpar o navegador, somem. Exporta de tempos em
+      tempos — o JSON restaura tudo, o CSV abre no Excel/Sheets.
+    </p>
+    <div class="stack">
+      <button class="btn btn-pri" onclick="exportJSON()">Exportar backup (.json)</button>
+      <button class="btn btn-ghost" onclick="exportCSV()">Exportar lançamentos (.csv)</button>
+      <label class="btn btn-ghost" style="display:block;text-align:center">
+        Importar backup (.json)
+        <input type="file" accept=".json,application/json" onchange="importJSON(event)" style="display:none">
+      </label>
+      <button class="btn btn-ghost" style="color:var(--out)" onclick="wipe()">Apagar tudo</button>
+    </div>
+    <p class="muted" style="margin:18px 2px 0;text-align:center" id="b-stamp"></p>
+  </section>
+</main>
+
+<!-- ================= NAV ================= -->
+<nav>
+  <button class="on" data-v="hoje" onclick="go('hoje')"><span class="ni">◎</span>Hoje</button>
+  <button data-v="mes" onclick="go('mes')"><span class="ni">▤</span>Mês</button>
+  <button data-v="fixos" onclick="go('fixos')"><span class="ni">⛁</span>Fixos</button>
+  <button data-v="backup" onclick="go('backup')"><span class="ni">⤓</span>Backup</button>
+</nav>
+
+<!-- ================= SHEET ================= -->
+<div class="scrim" id="scrim" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="grab"></div>
+  <h3 id="sheet-title">Nova renda</h3>
+  <div class="amt-wrap">
+    <span class="cur">R$</span>
+    <input class="amt-in num" id="s-valor" inputmode="decimal" placeholder="0,00">
+  </div>
+  <div class="chips" id="s-chips"></div>
+  <div class="field" id="s-km-field" style="display:none">
+    <label>Km rodados (opcional)</label>
+    <input id="s-km" inputmode="decimal" placeholder="ex: 120">
+  </div>
+  <div class="field">
+    <label>Observação (opcional)</label>
+    <input id="s-obs" placeholder="ex: corrida aeroporto" autocomplete="off">
+  </div>
+  <button class="btn" id="s-save" onclick="saveEntry()">Salvar</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ---------- storage com fallback (funciona no preview e na GitHub Pages) ---------- */
+const DB={
+  mem:{},
+  get(k){ try{return localStorage.getItem(k)}catch(e){return this.mem[k]??null} },
+  set(k,v){ try{localStorage.setItem(k,v)}catch(e){this.mem[k]=v} }
+};
+const KEY="fluxo.v1";
+const FONTES=["Uber","99","InDrive","iFood","Freela TI","Outro"];
+const CATS=["Combustível","Manutenção","Alimentação","Pedágio","Limpeza","Outro"];
+const ICON={Uber:"🚗","99":"🚗",InDrive:"🚗",iFood:"🛵","Freela TI":"💻",Outro:"💵",
+  "Combustível":"⛽","Manutenção":"🔧","Alimentação":"🍽️","Pedágio":"🛣️","Limpeza":"🧽"};
+
+let state=load();
+
+function load(){
+  const raw=DB.get(KEY);
+  if(raw){ try{return JSON.parse(raw)}catch(e){} }
+  return {entries:[], fixos:[], cfg:{dias:26, meta:200, ckm:0.22}};
+}
+function save(){ state.updated=Date.now(); DB.set(KEY,JSON.stringify(state)); }
+
+/* ---------- helpers ---------- */
+const BRL=n=>n.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
+const BRL0=n=>"R$"+Math.round(n).toLocaleString("pt-BR");
+const todayKey=()=>new Date().toISOString().slice(0,10);
+const monthKey=()=>new Date().toISOString().slice(0,7);
+const parseNum=s=>{ s=(s||"").toString().replace(/\./g,"").replace(",", "."); const n=parseFloat(s); return isNaN(n)?0:n; };
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+function toast(m){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show");
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),1800); }
+
+/* ---------- navegação ---------- */
+const TITLES={hoje:"Hoje",mes:"Este mês",fixos:"Custos fixos",backup:"Backup"};
+function go(v){
+  document.querySelectorAll(".view").forEach(s=>s.classList.remove("active"));
+  document.getElementById("v-"+v).classList.add("active");
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
+  document.getElementById("h-title").textContent=TITLES[v];
+  if(v==="mes")renderMes(); if(v==="fixos")renderFixos(); if(v==="backup")renderBackup();
+  window.scrollTo(0,0);
+}
+
+/* ---------- sheet (lançamento) ---------- */
+let sheetType="renda";
+function openSheet(type){
+  sheetType=type;
+  const isR=type==="renda";
+  document.getElementById("sheet-title").textContent=isR?"Nova renda":"Nova despesa";
+  const save=document.getElementById("s-save");
+  save.className="btn "+(isR?"btn-in":"btn-out");
+  save.textContent=isR?"Salvar renda":"Salvar despesa";
+  document.getElementById("s-km-field").style.display=isR?"block":"none";
+  // chips
+  const list=isR?FONTES:CATS;
+  const box=document.getElementById("s-chips"); box.innerHTML="";
+  list.forEach((c,i)=>{
+    const b=document.createElement("button");
+    b.className="chip"+(i===0?" on":""); b.textContent=c; b.dataset.cat=c;
+    b.onclick=()=>{ box.querySelectorAll(".chip").forEach(x=>x.classList.remove("on")); b.classList.add("on"); };
+    box.appendChild(b);
+  });
+  document.getElementById("s-valor").value="";
+  document.getElementById("s-km").value="";
+  document.getElementById("s-obs").value="";
+  document.getElementById("scrim").classList.add("show");
+  document.getElementById("sheet").classList.add("show");
+  setTimeout(()=>document.getElementById("s-valor").focus(),250);
+}
+function closeSheet(){
+  document.getElementById("scrim").classList.remove("show");
+  document.getElementById("sheet").classList.remove("show");
+}
+function saveEntry(){
+  const v=parseNum(document.getElementById("s-valor").value);
+  if(v<=0){ toast("Informe um valor"); return; }
+  const cat=document.querySelector("#s-chips .chip.on")?.dataset.cat||"Outro";
+  const e={id:uid(),date:todayKey(),ts:Date.now(),type:sheetType,cat,valor:v,
+    km:sheetType==="renda"?parseNum(document.getElementById("s-km").value):0,
+    obs:document.getElementById("s-obs").value.trim()};
+  state.entries.push(e); save(); closeSheet(); renderHoje();
+  toast((sheetType==="renda"?"+ ":"− ")+"R$"+BRL(v)+" · "+cat);
+}
+
+/* ---------- cálculos ---------- */
+function fixoMes(){ return state.fixos.reduce((s,f)=>s+f.valor,0); }
+function fixoDia(){ const d=Math.max(1,state.cfg.dias||1); return fixoMes()/d; }
+function dayAgg(dk){
+  let bruto=0,desp=0,km=0;
+  state.entries.filter(e=>e.date===dk).forEach(e=>{
+    if(e.type==="renda"){bruto+=e.valor;km+=e.km||0;} else desp+=e.valor;
+  });
+  return {bruto,desp,km};
+}
+
+/* ---------- render HOJE ---------- */
+function renderHoje(){
+  const tk=todayKey();
+  const {bruto,desp,km}=dayAgg(tk);
+  const fdia=fixoDia();
+  const liq=bruto-desp-fdia;
+  const hero=document.getElementById("hero");
+  hero.classList.toggle("neg",liq<0);
+  document.getElementById("hero-liq").textContent=BRL(liq);
+  document.getElementById("f-bruto").textContent=BRL0(bruto);
+  document.getElementById("f-var").textContent=BRL0(desp);
+  document.getElementById("f-fix").textContent=BRL0(fdia);
+
+  // meta
+  const meta=state.cfg.meta||0;
+  const pct=meta>0?Math.max(0,Math.min(100,liq/meta*100)):0;
+  document.getElementById("goal-fill").style.width=pct+"%";
+  document.getElementById("goal-cap").textContent=meta>0
+    ? (liq>=meta?"Meta batida ✓":"Faltam R$"+BRL(Math.max(0,meta-liq)))
+    : "Defina uma meta em Fixos";
+
+  // custo sobre bruto
+  const custoTot=desp+fdia;
+  const cpct=bruto>0?Math.min(100,custoTot/bruto*100):0;
+  document.getElementById("cost-fill").style.width=cpct+"%";
+  document.getElementById("cost-cap").textContent=bruto>0
+    ? "Custo come "+cpct.toFixed(0)+"% do teu bruto hoje"
+    : "Custo sobre o bruto: —";
+
+  document.getElementById("hero-meta").textContent=bruto>0
+    ? "Bruto R$"+BRL(bruto)+(km>0?" · "+km+" km":"")
+    : "Sem lançamentos ainda";
+
+  // lista
+  const rows=state.entries.filter(e=>e.date===tk).sort((a,b)=>b.ts-a.ts);
+  const box=document.getElementById("hoje-list");
+  document.getElementById("hoje-count").textContent=rows.length?rows.length+" lançamento"+(rows.length>1?"s":""):"";
+  if(!rows.length){ box.innerHTML='<div class="empty">Nada hoje. Toque em Renda ou Despesa pra começar.</div>'; }
+  else box.innerHTML=rows.map(e=>{
+    const isR=e.type==="renda";
+    return `<div class="row ${isR?'in-row':'out-row'}">
+      <div class="tag">${ICON[e.cat]||(isR?"💵":"💸")}</div>
+      <div class="body">
+        <div class="t1">${e.cat}${e.obs?' · '+esc(e.obs):''}</div>
+        <div class="t2">${new Date(e.ts).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}${e.km?' · '+e.km+' km':''}</div>
+      </div>
+      <div class="amt ${isR?'in':'out'} num">${isR?'+':'−'}R$${BRL(e.valor)}</div>
+      <button class="del" onclick="delEntry('${e.id}')" aria-label="Apagar">×</button>
+    </div>`;
+  }).join("");
+  document.getElementById("h-date").textContent=new Date().toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"short"});
+}
+function esc(s){return s.replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]));}
+function delEntry(id){ state.entries=state.entries.filter(e=>e.id!==id); save(); renderHoje(); }
+
+/* ---------- render MÊS ---------- */
+function renderMes(){
+  const mk=monthKey();
+  const es=state.entries.filter(e=>e.date.startsWith(mk));
+  let bruto=0,varTot=0,km=0; const dias=new Set(); const fontes={}; const cats={};
+  es.forEach(e=>{ dias.add(e.date);
+    if(e.type==="renda"){bruto+=e.valor;km+=e.km||0;fontes[e.cat]=(fontes[e.cat]||0)+e.valor;}
+    else{varTot+=e.valor;cats[e.cat]=(cats[e.cat]||0)+e.valor;}
+  });
+  const fix=fixoMes();
+  const liq=bruto-varTot-fix;
+  const nd=dias.size;
+  document.getElementById("m-bruto").textContent=BRL0(bruto);
+  document.getElementById("m-liq").textContent="R$"+BRL(liq);
+  document.getElementById("m-liq").classList.toggle("out",liq<0);
+  document.getElementById("m-dias").textContent=nd;
+  document.getElementById("m-mediadia").textContent=nd?"R$"+BRL(liq/nd)+" líq/dia":"—";
+  const ckmReal=km>0?(varTot+ (state.cfg.ckm||0)*km)/km:0;
+  document.getElementById("m-ckm").textContent=km>0?"R$"+BRL(varTot/km):"—";
+  document.getElementById("m-km").textContent=Math.round(km)+" km";
+
+  // breakdown despesas (var por cat + fixo)
+  const allCosts={...cats}; if(fix>0)allCosts["Fixos (rateio)"]=fix;
+  renderBars("m-breakdown",allCosts,bruto,"var");
+  renderBars("m-fontes",fontes,bruto,"in");
+}
+function renderBars(elId,obj,base,kind){
+  const el=document.getElementById(elId);
+  const items=Object.entries(obj).sort((a,b)=>b[1]-a[1]);
+  if(!items.length){ el.innerHTML='<div class="muted">Sem dados este mês.</div>'; return; }
+  const max=Math.max(...items.map(i=>i[1]));
+  const col=kind==="in"?"var(--in)":"linear-gradient(90deg,#E7A33A,#C9531F)";
+  el.innerHTML=items.map(([k,v])=>{
+    const w=max>0?v/max*100:0;
+    const share=base>0?" · "+(v/base*100).toFixed(0)+"%":"";
+    return `<div class="item"><div class="top"><span>${k}</span><span class="num">R$${BRL(v)}${share}</span></div>
+      <div class="track"><div class="fill" style="width:${w}%;background:${col}"></div></div></div>`;
+  }).join("");
+}
+
+/* ---------- render FIXOS ---------- */
+function renderFixos(){
+  const box=document.getElementById("fx-list");
+  if(!state.fixos.length){ box.innerHTML='<div class="empty">Nenhum custo fixo. Adicione acima.</div>'; }
+  else box.innerHTML=state.fixos.map(f=>`
+    <div class="row out-row">
+      <div class="tag">📌</div>
+      <div class="body"><div class="t1">${esc(f.nome)}</div>
+        <div class="t2 num">R$${BRL(f.valor/Math.max(1,state.cfg.dias))}/dia rateado</div></div>
+      <div class="amt out num">R$${BRL(f.valor)}</div>
+      <button class="del" onclick="delFixo('${f.id}')">×</button>
+    </div>`).join("");
+  document.getElementById("cfg-dias").value=state.cfg.dias;
+  document.getElementById("cfg-meta").value=state.cfg.meta;
+  document.getElementById("cfg-ckm").value=state.cfg.ckm;
+}
+function addFixo(){
+  const nome=document.getElementById("fx-nome").value.trim();
+  const valor=parseNum(document.getElementById("fx-valor").value);
+  if(!nome||valor<=0){ toast("Preencha nome e valor"); return; }
+  state.fixos.push({id:uid(),nome,valor}); save();
+  document.getElementById("fx-nome").value=""; document.getElementById("fx-valor").value="";
+  renderFixos(); toast("Custo fixo adicionado");
+}
+function delFixo(id){ state.fixos=state.fixos.filter(f=>f.id!==id); save(); renderFixos(); }
+function saveCfg(){
+  state.cfg.dias=Math.max(1,Math.round(parseNum(document.getElementById("cfg-dias").value))||26);
+  state.cfg.meta=parseNum(document.getElementById("cfg-meta").value);
+  state.cfg.ckm=parseNum(document.getElementById("cfg-ckm").value);
+  save(); renderFixos(); toast("Configuração salva");
+}
+
+/* ---------- BACKUP ---------- */
+function renderBackup(){
+  const s=state.updated?new Date(state.updated).toLocaleString("pt-BR"):"—";
+  document.getElementById("b-stamp").textContent=state.entries.length+" lançamentos · última alteração "+s;
+}
+function download(name,content,type){
+  const blob=new Blob([content],{type}); const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),500);
+}
+function exportJSON(){ download("fluxo-backup-"+todayKey()+".json",JSON.stringify(state,null,2),"application/json"); toast("Backup exportado"); }
+function exportCSV(){
+  const head="data,tipo,categoria,valor,km,obs\n";
+  const body=state.entries.slice().sort((a,b)=>a.ts-b.ts).map(e=>
+    [e.date,e.type,e.cat,e.valor.toFixed(2).replace(".",","),e.km||"",'"'+(e.obs||"").replace(/"/g,'""')+'"'].join(",")
+  ).join("\n");
+  download("fluxo-lancamentos-"+todayKey()+".csv","\uFEFF"+head+body,"text/csv"); toast("CSV exportado");
+}
+function importJSON(ev){
+  const f=ev.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ const d=JSON.parse(r.result);
+    if(!d.entries) throw 0;
+    state=Object.assign({entries:[],fixos:[],cfg:{dias:26,meta:200,ckm:0.22}},d);
+    save(); renderHoje(); renderBackup(); toast("Backup restaurado");
+  }catch(e){ toast("Arquivo inválido"); } };
+  r.readAsText(f); ev.target.value="";
+}
+function wipe(){
+  if(!confirm("Apagar TODOS os dados deste aparelho? Exporte um backup antes.")) return;
+  state={entries:[],fixos:[],cfg:{dias:26,meta:200,ckm:0.22}}; save();
+  renderHoje(); renderBackup(); toast("Tudo apagado");
+}
+
+/* ---------- service worker (offline) ---------- */
+if("serviceWorker" in navigator){ window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{})); }
+
+/* ---------- boot ---------- */
+renderHoje();
+</script>
+</body>
+</html>
