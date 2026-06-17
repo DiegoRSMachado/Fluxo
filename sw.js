@@ -1,5 +1,5 @@
-/* Fluxo service worker — cache offline simples (cache-first) */
-const CACHE = "fluxo-v1";
+/* Fluxo service worker — cache offline (cache-first) */
+const CACHE = "fluxo-v2";
 const ASSETS = [
   "./",
   "./index.html",
